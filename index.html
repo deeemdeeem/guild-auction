@@ -285,17 +285,6 @@
     <div class="success-title">Submitted!</div>
     <div class="success-sub" id="success-msg">Your recording has been saved.</div>
 
-    <!-- Drive link -->
-    <div style="margin-top:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:left;">
-      <div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:8px;">Guild Drive Folder</div>
-      <a id="drive-link" href="https://drive.google.com/drive/folders/16j16zt_DuMJS5oCKXM8b4-uuWxzABxir" target="_blank"
-        style="display:flex;align-items:center;gap:8px;font-size:13px;color:#5b9cf6;word-break:break-all;text-decoration:none;">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-        Open Guild Auction Drive Folder
-      </a>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Officers can verify your recording here.</div>
-    </div>
-
     <!-- Discord -->
     <div style="margin-top:1rem;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.3);border-radius:12px;padding:1.25rem;text-align:left;">
       <div style="font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:#7289da;text-transform:uppercase;margin-bottom:8px;">Post to Discord</div>
@@ -319,7 +308,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzn3uExBE7SN2B874bSOFR5F7R4RhG9T-t5tfrfcxKYpDA7hL7psaE0jfgk5Pu6Xc30jg/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoR_rt3VVJFniUn2vJqqYZrH-xpQ9sr8nj4np4tgKWzTphGGzmTOxFdfG8sc8nY5zX1Q/exec';
 
 const MEMBERS = [
   "AlianaCutee","Andylicious","Array","ashiya","ASPZY",
@@ -489,11 +478,9 @@ document.getElementById('submit-btn').onclick = async ()=>{
     const dateStr = getTodayStr();
     const ext = recordedBlob.type.includes('mp4')?'mp4':'webm';
 
-    // Send as JSON to Apps Script URL with no-cors
-    // no-cors requires a simple content-type — use text/plain with JSON string
-    await fetch(APPS_SCRIPT_URL, {
+    const resp = await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
+      mode: 'cors',
       headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({
         ign: selectedIGN,
@@ -504,8 +491,10 @@ document.getElementById('submit-btn').onclick = async ()=>{
       })
     });
 
-    // no-cors returns opaque response — we can't read it, but if no exception = success
+    const result = await resp.json();
     setProgress(100,'Done!');
+    const fileUrl = result.fileUrl || '';
+
     setTimeout(()=>{
       document.getElementById('form-section').style.display='none';
       document.getElementById('success-screen').classList.add('show');
@@ -515,15 +504,14 @@ document.getElementById('submit-btn').onclick = async ()=>{
       document.getElementById('success-msg').textContent=
         `${selectedIGN} · ${dayName} ${dateLabel} · saved to guild Drive`;
 
-      // Build Discord message
-      const driveUrl = 'https://drive.google.com/drive/folders/16j16zt_DuMJS5oCKXM8b4-uuWxzABxir';
-      const discordMsg = `✅ **Guild Auction Submission**\n👤 IGN: ${selectedIGN}\n📅 Date: ${dayName}, ${dateLabel}\n🎥 Recording saved to Guild Drive\n📁 ${driveUrl}`;
+      // Build Discord message with individual file URL
+      const discordMsg = `✅ **Guild Auction Submission**\n👤 IGN: ${selectedIGN}\n📅 Date: ${dayName}, ${dateLabel}\n🎥 ${fileUrl}`;
       document.getElementById('discord-msg-box').textContent = discordMsg;
 
       // Auto-copy to clipboard
       navigator.clipboard.writeText(discordMsg).then(()=>{
         document.getElementById('copy-btn-label').textContent = 'Copied!';
-      }).catch(()=>{}); // silently fail if clipboard blocked
+      }).catch(()=>{});
     },400);
   } catch(e){
     showToast('Upload failed: '+e.message);
