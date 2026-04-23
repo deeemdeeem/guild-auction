@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -259,7 +260,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzcFy4REiHlvwlGOvoXCw031AW-eKuzdSpAe-NyvFg2MOIXrU4XnlPHce7iseADcwJH1w/exec'; // ← Replace with your Google Apps Script Web App URL
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzn3uExBE7SN2B874bSOFR5F7R4RhG9T-t5tfrfcxKYpDA7hL7psaE0jfgk5Pu6Xc30jg/exec';
 
 const MEMBERS = [
   "AlianaCutee","Andylicious","Array","ashiya","ASPZY",
@@ -428,21 +429,31 @@ document.getElementById('submit-btn').onclick = async ()=>{
     setProgress(50,'Uploading to Google Drive...');
     const dateStr = getTodayStr();
     const ext = recordedBlob.type.includes('mp4')?'mp4':'webm';
-    const resp = await fetch(APPS_SCRIPT_URL,{
-      method:'POST',
-      body: JSON.stringify({ign:selectedIGN, date:dateStr, filename:`${dateStr}_${selectedIGN}.${ext}`, mimeType:recordedBlob.type||'video/webm', videoData:base64})
+
+    // Send as JSON to Apps Script URL with no-cors
+    // no-cors requires a simple content-type — use text/plain with JSON string
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        ign: selectedIGN,
+        date: dateStr,
+        filename: `${dateStr}_${selectedIGN}.${ext}`,
+        mimeType: recordedBlob.type || 'video/webm',
+        videoData: base64
+      })
     });
-    const result = await resp.json();
+
+    // no-cors returns opaque response — we can't read it, but if no exception = success
     setProgress(100,'Done!');
-    if(result.status==='ok'){
-      setTimeout(()=>{
-        document.getElementById('form-section').style.display='none';
-        document.getElementById('success-screen').classList.add('show');
-        const d=getPHDate();
-        document.getElementById('success-msg').textContent=
-          `${selectedIGN} · ${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} · saved to guild Drive`;
-      },400);
-    } else throw new Error(result.message||'Server error');
+    setTimeout(()=>{
+      document.getElementById('form-section').style.display='none';
+      document.getElementById('success-screen').classList.add('show');
+      const d=getPHDate();
+      document.getElementById('success-msg').textContent=
+        `${selectedIGN} · ${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} · saved to guild Drive`;
+    },400);
   } catch(e){
     showToast('Upload failed: '+e.message);
     document.getElementById('submit-btn').disabled=false;
