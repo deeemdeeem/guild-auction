@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guild Auction · Submit Recording</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c24;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.15);
+    --gold: #c9a84c;
+    --gold-dim: #8a6f2e;
+    --gold-glow: rgba(201,168,76,0.15);
+    --red: #c94c4c;
+    --green: #4cad6e;
+    --text: #e8e4d8;
+    --text-muted: #6b7280;
+    --text-dim: #9ca3af;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(201,168,76,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.03) 1px, transparent 1px);
+    background-size: 40px 40px; pointer-events: none; z-index: 0;
+  }
+  .page-wrap { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .header { text-align: center; margin-bottom: 2.5rem; padding-top: 1rem; }
+  .guild-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--gold-glow); border: 1px solid var(--gold-dim); border-radius: 20px;
+    padding: 5px 14px; font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: .12em; color: var(--gold); text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .guild-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  h1 { font-family: 'Rajdhani', sans-serif; font-size: 2.2rem; font-weight: 700; letter-spacing: .04em; color: var(--text); line-height: 1.1; }
+  h1 span { color: var(--gold); }
+  .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+  /* No auction screen */
+  .no-auction { display: none; text-align: center; padding: 2.5rem 1rem; }
+  .no-auction.show { display: block; }
+  .no-auction-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem;
+  }
+  .no-auction-title { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--gold-dim); margin-bottom: 8px; }
+  .no-auction-sub { font-size: 14px; color: var(--text-muted); line-height: 1.7; }
+  .next-dates { display: flex; gap: 8px; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
+  .next-date-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; font-size: 13px; color: var(--text-dim); text-align: center; }
+  .next-date-pill strong { display: block; font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600; color: var(--gold); letter-spacing: .06em; }
+
+  /* Today banner */
+  .today-banner {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--gold-glow); border: 1px solid var(--gold-dim); border-radius: 10px;
+    padding: 12px 16px; margin-bottom: 1.25rem;
+  }
+  .today-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 4px; animation: pulse 2s infinite; }
+  .today-text { font-size: 14px; color: var(--text); }
+  .today-text strong { font-family: 'Rajdhani', sans-serif; font-size: 15px; font-weight: 600; color: var(--gold); letter-spacing: .04em; }
+  .today-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; transition: border-color .2s; }
+  .card:focus-within { border-color: var(--border-hover); }
+  .field-label { font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .field-label .req { color: var(--red); font-size: 14px; }
+
+  /* IGN Search */
+  .search-wrap { position: relative; }
+  .search-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; font-size: 15px; color: var(--text); font-family: 'Inter', sans-serif; outline: none; transition: border-color .2s, box-shadow .2s; }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 3px var(--gold-glow); }
+  .dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface2); border: 1px solid var(--border-hover); border-radius: 8px; max-height: 200px; overflow-y: auto; z-index: 50; display: none; }
+  .dropdown.open { display: block; }
+  .dropdown::-webkit-scrollbar { width: 4px; }
+  .dropdown::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 2px; }
+  .dd-item { padding: 10px 14px; font-size: 14px; cursor: pointer; color: var(--text-dim); transition: background .1s, color .1s; border-bottom: 1px solid var(--border); }
+  .dd-item:last-child { border-bottom: none; }
+  .dd-item:hover { background: var(--gold-glow); color: var(--text); }
+  .dd-item .match { color: var(--gold); font-weight: 500; }
+  .dd-empty { padding: 12px 14px; font-size: 13px; color: var(--text-muted); }
+  .selected-ign { display: none; align-items: center; gap: 8px; margin-top: 8px; background: rgba(76,173,110,0.1); border: 1px solid rgba(76,173,110,0.3); border-radius: 6px; padding: 7px 12px; font-size: 13px; color: var(--green); }
+  .selected-ign.show { display: flex; }
+
+  /* Recorder */
+  .recorder-area { border: 1px dashed var(--border-hover); border-radius: 10px; padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all .2s; }
+  .recorder-area:hover { border-color: var(--gold-dim); background: var(--gold-glow); }
+  .recorder-icon { width: 48px; height: 48px; margin: 0 auto 12px; background: var(--surface2); border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-hover); }
+  .recorder-title { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .recorder-sub { font-size: 12px; color: var(--text-muted); }
+  .quality-hint { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: var(--text-muted); background: var(--surface2); border-radius: 6px; padding: 6px 10px; }
+  .quality-hint span { color: var(--green); font-weight: 500; }
+
+  .rec-controls { display: none; }
+  .rec-controls.active { display: block; }
+  .rec-timer { font-family: 'Rajdhani', sans-serif; font-size: 2.5rem; font-weight: 700; color: var(--red); letter-spacing: .05em; }
+  .rec-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--red); margin-right: 6px; animation: blink 1s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .btn-rec-stop { display: inline-flex; align-items: center; gap: 8px; background: rgba(201,76,76,0.15); border: 1px solid rgba(201,76,76,0.4); color: #f87171; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 1rem; transition: all .15s; }
+  .btn-rec-stop:hover { background: rgba(201,76,76,0.25); }
+  .size-meter { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+  .size-meter .size-val { color: var(--gold); font-weight: 500; }
+
+  .preview-wrap { display: none; }
+  .preview-wrap.show { display: block; }
+  video#preview { width: 100%; border-radius: 8px; background: #000; max-height: 200px; margin-bottom: 8px; }
+  .preview-info { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
+  .btn-retake { background: none; border: none; color: var(--gold-dim); font-size: 12px; cursor: pointer; text-decoration: underline; margin-left: auto; }
+  .btn-retake:hover { color: var(--gold); }
+  .upload-alt { text-align: center; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+  .upload-alt label { color: var(--gold-dim); cursor: pointer; text-decoration: underline; }
+  .upload-alt label:hover { color: var(--gold); }
+
+  /* Submit */
+  .btn-submit { width: 100%; background: linear-gradient(135deg, #b8922a, #c9a84c); border: none; border-radius: 10px; padding: 14px; font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #0a0c10; cursor: pointer; transition: all .2s; margin-top: 0.5rem; }
+  .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(201,168,76,0.3); }
+  .btn-submit:active { transform: translateY(0); }
+  .btn-submit:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+  .upload-progress { display: none; margin-top: 1rem; }
+  .upload-progress.show { display: block; }
+  .progress-bar { height: 4px; background: var(--surface2); border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+  .progress-fill { height: 100%; background: var(--gold); border-radius: 2px; width: 0%; transition: width .3s; }
+  .progress-label { font-size: 12px; color: var(--text-muted); text-align: center; }
+
+  /* Success */
+  .success-screen { display: none; text-align: center; padding: 3rem 1rem; }
+  .success-screen.show { display: block; }
+  .success-icon { width: 72px; height: 72px; border-radius: 50%; background: rgba(76,173,110,0.15); border: 2px solid var(--green); display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem; }
+  .success-title { font-family: 'Rajdhani', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--green); margin-bottom: 6px; }
+  .success-sub { font-size: 14px; color: var(--text-muted); }
+  .btn-another { display: inline-block; margin-top: 1.5rem; background: none; border: 1px solid var(--border-hover); border-radius: 8px; padding: 9px 20px; font-size: 14px; color: var(--text-dim); cursor: pointer; transition: all .15s; }
+  .btn-another:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: rgba(201,76,76,0.9); color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 100; white-space: nowrap; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="header">
+    <div class="guild-badge">Guild Auction</div>
+    <h1>Submit Your<br><span>Recording</span></h1>
+    <p class="subtitle">Prove your bid. Protect your guild's resources.</p>
+  </div>
+
+  <!-- No auction today -->
+  <div class="no-auction" id="no-auction">
+    <div class="no-auction-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8a6f2e" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <div class="no-auction-title">No Auction Today</div>
+    <div class="no-auction-sub">
+      Guild auction submissions are only open on<br>
+      <strong style="color:var(--gold-dim)">Tuesday · Thursday · Saturday</strong><br><br>
+      Come back on one of these upcoming dates:
+    </div>
+    <div class="next-dates" id="next-dates"></div>
+  </div>
+
+  <!-- Main form -->
+  <div id="form-section" style="display:none;">
+    <div class="today-banner">
+      <div class="today-dot"></div>
+      <div>
+        <div class="today-text">Auction day — <strong id="today-label"></strong></div>
+        <div class="today-sub">Your recording will be logged for today automatically.</div>
+      </div>
+    </div>
+
+    <!-- IGN -->
+    <div class="card">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        In-Game Name <span class="req">*</span>
+      </div>
+      <div class="search-wrap">
+        <input class="search-input" id="ign-input" type="text" placeholder="Type to search your IGN..." autocomplete="off">
+        <div class="dropdown" id="ign-dropdown"></div>
+      </div>
+      <div class="selected-ign" id="selected-ign-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span id="selected-ign-text"></span>
+      </div>
+      <input type="hidden" id="ign-value">
+    </div>
+
+    <!-- Recording -->
+    <div class="card">
+      <div class="field-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        Screen Recording <span class="req">*</span>
+      </div>
+
+      <div id="recorder-idle">
+        <div class="recorder-area" id="start-rec-btn">
+          <div class="recorder-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#c9a84c"/></svg>
+          </div>
+          <div class="recorder-title">Start Screen Recording</div>
+          <div class="recorder-sub">Click to capture your screen — no app install needed</div>
+        </div>
+        <div class="quality-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Records at <span>720p · 15fps · no audio</span> — keeps files small (~5–15 MB)
+        </div>
+        <div class="upload-alt">
+          or <label for="file-upload">upload an existing video</label>
+          <input type="file" id="file-upload" accept="video/*" style="display:none">
+        </div>
+      </div>
+
+      <div class="rec-controls" id="rec-active">
+        <div style="text-align:center; padding:1.5rem 0;">
+          <div><span class="rec-dot"></span><span class="rec-timer" id="rec-timer">00:00</span></div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Recording your screen...</div>
+          <div class="size-meter">Est. file size: <span class="size-val" id="est-size">0.0 MB</span></div>
+          <button class="btn-rec-stop" id="stop-rec-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            Stop Recording
+          </button>
+        </div>
+      </div>
+
+      <div class="preview-wrap" id="preview-wrap">
+        <video id="preview" controls playsinline></video>
+        <div class="preview-info">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <span id="preview-label">Recording ready</span>
+          <button class="btn-retake" id="retake-btn">Retake</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-submit" id="submit-btn">Submit Recording</button>
+    <div class="upload-progress" id="upload-progress">
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-label" id="progress-label">Uploading...</div>
+    </div>
+  </div>
+
+  <!-- Success -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4cad6e" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="success-title">Submitted!</div>
+    <div class="success-sub" id="success-msg">Your recording has been saved.</div>
+    <button class="btn-another" onclick="resetForm()">Submit another</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const APPS_SCRIPT_URL = 'APPS_SCRIPT_URL'; // ← Replace with your Google Apps Script Web App URL
+
+const MEMBERS = [
+  "AlianaCutee","Andylicious","Array","ashiya","ASPZY",
+  "BADBUNNY","bigman","Bonzkie","Bruh","BuKaG",
+  "Casper","Cereal","Chambong","Chryst","CiieeN",
+  "CokeAngelArc","Damen","Delta","Denkai","Destina",
+  "Devane","Dior","DonJobert","DUDAI","DrunkenBanana",
+  "eLeven","Eris","Fattorney","Freyya","GabeOwners",
+  "Gandalf","GreatG","Haruchan","Illl","JEPE",
+  "Jiesen","JIROHYE","JoVVVz","Kesilyo","Kikizinha",
+  "Kodz","Kolcustard","KURUMI","KuyaLots","Kyiv",
+  "LatrellSpencer","Lamec","Loow","Lucky","Lucifera",
+  "madzmikes","Methode","MomiNene","Momonja","Mykool",
+  "Nesss","Noice","PapiWild","Palzer","PYnkerbell",
+  "PYterpan","Radzchin","ReApEr","reignyourheart","Ruuri",
+  "RYDER","Sundae","Thalassa","Tutturu","Vanduggan",
+  "ZeroZeroTwo"
+].sort((a,b)=>a.toLowerCase().localeCompare(b.toLowerCase()));
+
+// ── Philippine time auction day detection ──────────────────
+const AUCTION_DAYS = [2,4,6]; // Tue, Thu, Sat
+const DAY_NAMES = {2:'Tuesday',4:'Thursday',6:'Saturday'};
+
+function getPHDate() {
+  return new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Manila'}));
+}
+function isAuctionDay() { return AUCTION_DAYS.includes(getPHDate().getDay()); }
+function getTodayStr() {
+  const d = getPHDate();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function initPage() {
+  const d = getPHDate();
+  if (isAuctionDay()) {
+    document.getElementById('form-section').style.display = 'block';
+    document.getElementById('today-label').textContent =
+      DAY_NAMES[d.getDay()] + ' · ' + d.toLocaleDateString('en-PH',{month:'long',day:'numeric',year:'numeric'});
+  } else {
+    document.getElementById('no-auction').classList.add('show');
+    const container = document.getElementById('next-dates');
+    let found=0, i=1;
+    while(found<3 && i<=14){
+      const nd=new Date(d); nd.setDate(d.getDate()+i);
+      if(AUCTION_DAYS.includes(nd.getDay())){
+        const pill=document.createElement('div'); pill.className='next-date-pill';
+        pill.innerHTML=`<strong>${DAY_NAMES[nd.getDay()]}</strong>${nd.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}`;
+        container.appendChild(pill); found++;
+      }
+      i++;
+    }
+  }
+}
+
+// ── IGN search ─────────────────────────────────────────────
+const ignInput = document.getElementById('ign-input');
+const ignDropdown = document.getElementById('ign-dropdown');
+let selectedIGN = '';
+
+function highlight(text, q) {
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if(i===-1) return text;
+  return text.slice(0,i)+`<span class="match">${text.slice(i,i+q.length)}</span>`+text.slice(i+q.length);
+}
+function renderDropdown(q) {
+  const list = MEMBERS.filter(m=>m.toLowerCase().includes(q.toLowerCase()));
+  ignDropdown.innerHTML = list.length
+    ? list.slice(0,10).map(m=>`<div class="dd-item" onmousedown="selectIGN('${m}')">${highlight(m,q)}</div>`).join('')
+    : '<div class="dd-empty">No match found</div>';
+  ignDropdown.classList.add('open');
+}
+function selectIGN(name) {
+  selectedIGN=name; ignInput.value=name;
+  document.getElementById('ign-value').value=name;
+  document.getElementById('selected-ign-text').textContent=name+' selected';
+  document.getElementById('selected-ign-badge').classList.add('show');
+  ignDropdown.classList.remove('open');
+}
+ignInput.addEventListener('input',()=>{
+  document.getElementById('selected-ign-badge').classList.remove('show');
+  selectedIGN='';
+  ignInput.value.length>0 ? renderDropdown(ignInput.value) : ignDropdown.classList.remove('open');
+});
+ignInput.addEventListener('focus',()=>{ if(ignInput.value) renderDropdown(ignInput.value); });
+ignInput.addEventListener('blur',()=>setTimeout(()=>ignDropdown.classList.remove('open'),150));
+
+// ── Screen recorder (compressed) ──────────────────────────
+let recordedBlob=null, mediaRecorder=null, recChunks=[], recInterval=null, recSeconds=0;
+
+function getMimeType() {
+  return ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4']
+    .find(t=>MediaRecorder.isTypeSupported(t))||'';
+}
+
+document.getElementById('start-rec-btn').onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video:{ width:{ideal:1280}, height:{ideal:720}, frameRate:{ideal:15,max:20} },
+      audio: false  // no audio = ~50% smaller file
+    });
+    recChunks=[];
+    mediaRecorder = new MediaRecorder(stream, {
+      mimeType: getMimeType(),
+      videoBitsPerSecond: 300_000  // 300kbps — readable but compact
+    });
+    mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) recChunks.push(e.data); };
+    mediaRecorder.onstop = finishRecording;
+    mediaRecorder.start(1000);
+    stream.getVideoTracks()[0].onended = ()=>stopRecording();
+
+    document.getElementById('recorder-idle').style.display='none';
+    document.getElementById('rec-active').classList.add('active');
+    recSeconds=0;
+    recInterval = setInterval(()=>{
+      recSeconds++;
+      document.getElementById('rec-timer').textContent =
+        String(Math.floor(recSeconds/60)).padStart(2,'0')+':'+String(recSeconds%60).padStart(2,'0');
+      // ~37.5 KB/s at 300kbps
+      document.getElementById('est-size').textContent=(recSeconds*37500/1024/1024).toFixed(1)+' MB';
+    },1000);
+  } catch(e) {
+    if(e.name!=='NotAllowedError') showToast('Could not start recording. Try uploading a file instead.');
+  }
+};
+
+document.getElementById('stop-rec-btn').onclick = stopRecording;
+function stopRecording() {
+  if(mediaRecorder&&mediaRecorder.state!=='inactive'){
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t=>t.stop());
+  }
+  clearInterval(recInterval);
+}
+function finishRecording() {
+  recordedBlob = new Blob(recChunks,{type:getMimeType()||'video/webm'});
+  document.getElementById('preview').src = URL.createObjectURL(recordedBlob);
+  document.getElementById('preview-label').textContent =
+    `Ready · ${recSeconds}s · ${(recordedBlob.size/1024/1024).toFixed(1)} MB`;
+  document.getElementById('rec-active').classList.remove('active');
+  document.getElementById('preview-wrap').classList.add('show');
+}
+document.getElementById('retake-btn').onclick = ()=>{
+  recordedBlob=null; recChunks=[];
+  document.getElementById('preview-wrap').classList.remove('show');
+  document.getElementById('recorder-idle').style.display='block';
+  document.getElementById('rec-timer').textContent='00:00';
+  document.getElementById('est-size').textContent='0.0 MB';
+};
+document.getElementById('file-upload').onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  recordedBlob=f;
+  document.getElementById('preview').src=URL.createObjectURL(f);
+  document.getElementById('preview-label').textContent=`${f.name} · ${(f.size/1024/1024).toFixed(1)} MB`;
+  document.getElementById('preview-wrap').classList.add('show');
+};
+
+// ── Submit ─────────────────────────────────────────────────
+document.getElementById('submit-btn').onclick = async ()=>{
+  if(!selectedIGN){ showToast('Please select your IGN'); return; }
+  if(!recordedBlob){ showToast('Please record or upload your screen recording'); return; }
+  document.getElementById('submit-btn').disabled=true;
+  document.getElementById('upload-progress').classList.add('show');
+  try {
+    setProgress(20,'Preparing video...');
+    const base64 = await blobToBase64(recordedBlob);
+    setProgress(50,'Uploading to Google Drive...');
+    const dateStr = getTodayStr();
+    const ext = recordedBlob.type.includes('mp4')?'mp4':'webm';
+    const resp = await fetch(APPS_SCRIPT_URL,{
+      method:'POST',
+      body: JSON.stringify({ign:selectedIGN, date:dateStr, filename:`${dateStr}_${selectedIGN}.${ext}`, mimeType:recordedBlob.type||'video/webm', videoData:base64})
+    });
+    const result = await resp.json();
+    setProgress(100,'Done!');
+    if(result.status==='ok'){
+      setTimeout(()=>{
+        document.getElementById('form-section').style.display='none';
+        document.getElementById('success-screen').classList.add('show');
+        const d=getPHDate();
+        document.getElementById('success-msg').textContent=
+          `${selectedIGN} · ${DAY_NAMES[d.getDay()]} ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} · saved to guild Drive`;
+      },400);
+    } else throw new Error(result.message||'Server error');
+  } catch(e){
+    showToast('Upload failed: '+e.message);
+    document.getElementById('submit-btn').disabled=false;
+    document.getElementById('upload-progress').classList.remove('show');
+  }
+};
+
+function blobToBase64(blob){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(blob);
+  });
+}
+function setProgress(pct,label){
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=label;
+}
+function resetForm(){
+  selectedIGN=''; recordedBlob=null; recChunks=[];
+  ignInput.value='';
+  document.getElementById('ign-value').value='';
+  document.getElementById('selected-ign-badge').classList.remove('show');
+  document.getElementById('preview-wrap').classList.remove('show');
+  document.getElementById('recorder-idle').style.display='block';
+  document.getElementById('submit-btn').disabled=false;
+  document.getElementById('upload-progress').classList.remove('show');
+  document.getElementById('rec-timer').textContent='00:00';
+  document.getElementById('est-size').textContent='0.0 MB';
+  document.getElementById('form-section').style.display=isAuctionDay()?'block':'none';
+  document.getElementById('success-screen').classList.remove('show');
+}
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+initPage();
+</script>
+</body>
+</html>
